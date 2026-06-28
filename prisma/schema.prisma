@@ -1,0 +1,409 @@
+// This is your Prisma schema file for SKWIRREL
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================
+// AUTH
+// ==================
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  role           Role      @default(customer)
+  phone          String?
+  loyaltyPoints  Int       @default(0)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  orders         Order[]
+  reviews        Review[]
+  wishlist       Wishlist[]
+  addresses      Address[]
+  cartItems      CartItem[]
+
+  @@map("users")
+}
+
+enum Role {
+  customer
+  admin
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================
+// PRODUCTS
+// ==================
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  sort_order  Int       @default(0)
+  created_at  DateTime  @default(now())
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  description      String    @db.Text
+  short_description String?
+  price            Decimal   @db.Decimal(10, 2)
+  compare_price    Decimal?  @db.Decimal(10, 2)
+  cost_price       Decimal?  @db.Decimal(10, 2)
+  sku              String    @unique
+  barcode          String?
+  weight           Float?
+  images           String[]
+  category_id      String
+  collection       String?
+  tags             String[]
+  material         String?
+  care_instructions String?
+  sustainability_info String?
+  is_active        Boolean   @default(true)
+  is_featured      Boolean   @default(false)
+  sold_count       Int       @default(0)
+  meta_title       String?
+  meta_description String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  category         Category   @relation(fields: [category_id], references: [id])
+  variants         ProductVariant[]
+  reviews          Review[]
+  wishlist         Wishlist[]
+  orderItems       OrderItem[]
+  cartItems        CartItem[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id         String  @id @default(cuid())
+  product_id String
+  size       String?
+  color      String?
+  color_hex  String?
+  sku        String  @unique
+  price      Decimal? @db.Decimal(10, 2)
+  stock      Int     @default(0)
+  image      String?
+  is_active  Boolean @default(true)
+
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@map("product_variants")
+}
+
+// ==================
+// ORDERS
+// ==================
+
+model Order {
+  id                  String        @id @default(cuid())
+  order_number        String        @unique @default(cuid())
+  user_id             String?
+  email               String
+  phone               String?
+  status              OrderStatus   @default(pending)
+  payment_status      PaymentStatus @default(pending)
+  payment_method      String?
+  payment_intent      String?
+  razorpay_order_id   String?
+  razorpay_payment_id String?
+  subtotal            Decimal       @db.Decimal(10, 2)
+  discount            Decimal       @default(0) @db.Decimal(10, 2)
+  shipping            Decimal       @default(0) @db.Decimal(10, 2)
+  tax                 Decimal       @default(0) @db.Decimal(10, 2)
+  total               Decimal       @db.Decimal(10, 2)
+  coupon_code         String?
+  shipping_address    Json
+  tracking_number     String?
+  notes               String?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+
+  user               User?          @relation(fields: [user_id], references: [id])
+  items              OrderItem[]
+  payment            Payment?
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+  payment_failed
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  order_id   String
+  product_id String
+  variant_id String?
+  name       String
+  image      String?
+  size       String?
+  color      String?
+  quantity   Int
+  price      Decimal @db.Decimal(10, 2)
+
+  order   Order          @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [product_id], references: [id])
+  variant ProductVariant? @relation(fields: [variant_id], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id             String   @id @default(cuid())
+  order_id       String   @unique
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("INR")
+  provider       String
+  provider_id    String
+  status         String
+  metadata       Json?
+  created_at     DateTime @default(now())
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@map("payments")
+}
+
+// ==================
+// CART
+// ==================
+
+model CartItem {
+  id         String @id @default(cuid())
+  user_id    String
+  product_id String
+  variant_id String?
+  quantity   Int    @default(1)
+  created_at DateTime @default(now())
+
+  user    User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [product_id], references: [id])
+  variant ProductVariant? @relation(fields: [variant_id], references: [id])
+
+  @@unique([user_id, product_id, variant_id])
+  @@map("cart_items")
+}
+
+// ==================
+// WISHLIST & ADDRESSES
+// ==================
+
+model Wishlist {
+  id         String   @id @default(cuid())
+  user_id    String
+  product_id String
+  created_at DateTime @default(now())
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id])
+
+  @@unique([user_id, product_id])
+  @@map("wishlists")
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  user_id    String
+  type       String   @default("home")
+  name       String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  pincode    String
+  country    String   @default("India")
+  is_default Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+// ==================
+// REVIEWS
+// ==================
+
+model Review {
+  id          String   @id @default(cuid())
+  product_id  String
+  user_id     String
+  rating      Int
+  title       String?
+  body        String   @db.Text
+  images      String[]
+  is_approved Boolean  @default(false)
+  is_verified Boolean  @default(false)
+  helpful     Int      @default(0)
+  created_at  DateTime @default(now())
+
+  product Product @relation(fields: [product_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+
+  @@map("reviews")
+}
+
+// ==================
+// COUPONS
+// ==================
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  type            String    // "percentage" | "fixed"
+  value           Decimal   @db.Decimal(10, 2)
+  min_order       Decimal?  @db.Decimal(10, 2)
+  max_discount    Decimal?  @db.Decimal(10, 2)
+  usage_limit     Int?
+  used_count      Int       @default(0)
+  is_active       Boolean   @default(true)
+  expires_at      DateTime?
+  created_at      DateTime  @default(now())
+
+  @@map("coupons")
+}
+
+// ==================
+// BLOG
+// ==================
+
+model BlogPost {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  excerpt      String
+  content      String   @db.Text
+  cover_image  String
+  author_name  String
+  author_image String?
+  tags         String[]
+  category     String?
+  is_published Boolean  @default(false)
+  published_at DateTime?
+  meta_title   String?
+  meta_desc    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("blog_posts")
+}
+
+// ==================
+// LOOKBOOK
+// ==================
+
+model LookbookImage {
+  id         String   @id @default(cuid())
+  url        String
+  alt        String?
+  category   String?
+  sort_order Int      @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  @@map("lookbook_images")
+}
+
+// ==================
+// MARKETING
+// ==================
+
+model NewsletterSubscriber {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  created_at DateTime @default(now())
+
+  @@map("newsletter_subscribers")
+}
+
+model ContactMessage {
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  subject    String?
+  message    String   @db.Text
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@map("contact_messages")
+}

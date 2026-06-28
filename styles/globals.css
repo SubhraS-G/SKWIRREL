@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================
+   SKWIRREL — Global Styles
+   ============================ */
+
+:root {
+  --brand-black: #0A0A0A;
+  --brand-orange: #E85A1C;
+  --brand-orange-dark: #C04A10;
+  --brand-ivory: #F8F6F2;
+  --brand-beige: #EDE7DE;
+  --brand-gray: #8B8B8B;
+
+  --font-bebas: "Bebas Neue", sans-serif;
+  --font-playfair: "Playfair Display", serif;
+  --font-poppins: "Poppins", sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--brand-black);
+  color: var(--brand-ivory);
+  font-family: var(--font-poppins);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom cursor */
+.cursor {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  background: var(--brand-orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease;
+}
+
+.cursor-ring {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(232, 90, 28, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.25s ease, width 0.3s ease, height 0.3s ease;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--brand-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brand-orange);
+  border-radius: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--brand-orange);
+  color: var(--brand-ivory);
+}
+
+/* Progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--brand-orange);
+  z-index: 200;
+  transition: width 0.1s linear;
+}
+
+/* Smooth scroll (Lenis) */
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Typography utilities */
+@layer utilities {
+  .font-bebas { font-family: var(--font-bebas); }
+  .font-playfair { font-family: var(--font-playfair); }
+  .font-poppins { font-family: var(--font-poppins); }
+
+  .text-brand-orange { color: var(--brand-orange); }
+  .text-brand-ivory { color: var(--brand-ivory); }
+  .text-brand-gray { color: var(--brand-gray); }
+  .bg-brand-black { background: var(--brand-black); }
+  .bg-brand-orange { background: var(--brand-orange); }
+  .bg-brand-beige { background: var(--brand-beige); }
+
+  .tracking-wider-brand { letter-spacing: 0.2em; }
+  .tracking-widest-brand { letter-spacing: 0.3em; }
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.animate-fade-up   { animation: fadeUp   0.6s ease forwards; }
+.animate-fade-in   { animation: fadeIn   0.5s ease forwards; }
+.animate-slide-left{ animation: slideLeft 0.5s ease forwards; }
+
+/* Stagger helpers */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
